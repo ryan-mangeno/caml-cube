@@ -1,0 +1,4 @@
+(executable
+ (name main)
+ (modules main obj_loader render)
+ (libraries notty.unix unix str))

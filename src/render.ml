@@ -1,74 +1,46 @@
-(* cube.ml *)
 open Notty
 
-type point3d = { x : float; y : float; z : float }
 type point2d = { u : float; v : float }
 
-(* define the 8 vertices of a cube centered at (0,0,0) *)
-let vertices = [
-  { x = -1.; y = -1.; z = -1. };
-  { x = 1.; y = -1.; z = -1. };
-  { x = 1.; y = 1.; z = -1. };
-  { x = -1.; y = 1.; z = -1. };
-  { x = -1.; y = -1.; z = 1. };
-  { x = 1.; y = -1.; z = 1. };
-  { x = 1.; y = 1.; z = 1. };
-  { x = -1.; y = 1.; z = 1. };
-]
-
-(* define edges by connecting vertex indices *)
-let edges = [
-  (0, 1); (1, 2); (2, 3); (3, 0); (* Back face *)
-  (4, 5); (5, 6); (6, 7); (7, 4); (* Front face *)
-  (0, 4); (1, 5); (2, 6); (3, 7); (* Connecting edges *)
-]
-
-let xrot {x; y; z} angle = 
+let xrot {Obj_loader.x; y; z} angle = 
   let c = cos angle in 
   let s = sin angle in
-  { x = x; 
-    y = y *. c -. z *. s; 
-    z = y *. s +. z *. c }
+  { Obj_loader.x = x; 
+               y = y *. c -. z *. s; 
+               z = y *. s +. z *. c }
 
-let yrot {x; y; z} angle = 
+let yrot {Obj_loader.x; y; z} angle = 
   let c = cos angle in 
   let s = sin angle in
-  { x = x *. c +. z *. s; 
-    y = y; 
-    z = -.x *. s +. z *. c }
+  { Obj_loader.x = x *. c +. z *. s; 
+               y = y; 
+               z = -.x *. s +. z *. c }
 
-let zrot {x; y; z} angle = 
+let zrot {Obj_loader.x; y; z} angle = 
   let c = cos angle in 
   let s = sin angle in
-  { x = x *. c -. y *. s; 
-    y = x *. s +. y *. c; 
-    z = z }
+  { Obj_loader.x = x *. c -. y *. s; 
+               y = x *. s +. y *. c; 
+               z = z }
 
 (* project 3D point to 2D using weak perspective projection *)
-let project (p : point3d) width height scale =
+let project (p : Obj_loader.point3d) width height scale =
   let fov = 1.0 in
   let distance = 4.0 in
   let factor = fov /. (distance -. p.z) in
-  (* Center the projection *)
+  (* center the projection *)
   let u = (p.x *. factor *. scale *. 2.0) +. (float_of_int width) /. 2.0 in
   let v = (p.y *. factor *. scale) +. (float_of_int height) /. 2.0 in
   { u; v }
 
-(* render cube *)
-let render width height x_rot y_rot z_rot dt =
+let render_obj width height x_rot y_rot z_rot vertices edges =
 
-  let px = cos dt in
-  let py = sin dt in
-
-  (* Rotate all vertices *)
+  (* rot all vertices *)
   let rotated_verts = 
     List.map (fun v ->
-      let p = v |> (fun p -> xrot p x_rot)
-                |> (fun p -> yrot p y_rot)
-                |> (fun p -> zrot p z_rot) in
-      { x = p.x +. px ;
-        y = p.y +. py ; 
-        z = p.z }
+    v |> (fun p -> xrot p x_rot)
+      |> (fun p -> yrot p y_rot)
+      |> (fun p -> zrot p z_rot)
     ) vertices in
 
   (* project all verts to 2d *)
@@ -102,7 +74,7 @@ let render width height x_rot y_rot z_rot dt =
       interpolate 0 acc
     ) [] edges
   in
-  
+
   (* convert list of coordinates to an image *)
   I.tabulate width height (fun x y ->
     if List.mem (x, y) points then
